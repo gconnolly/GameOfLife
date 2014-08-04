@@ -9,17 +9,21 @@ namespace GameOfLife
     {
         static void Main(string[] args)
         {
-            var universe = new Universe(10, 10);
-
-            universe.LetThereBeLife(new[,] { { 1, 2 }, { 2, 3 }, { 3, 1 }, { 3, 2 }, { 3, 3 } });
-
-            Console.WriteLine(universe.ToString());
+            var life = new HashSet<Tuple<int, int>> { 
+                new Tuple<int, int> ( 1, 2 ), 
+                new Tuple<int, int> ( 2, 3 ), 
+                new Tuple<int, int> ( 3, 1 ), 
+                new Tuple<int, int> ( 3, 2 ), 
+                new Tuple<int, int> ( 3, 3 ) 
+            };
+      
+            Console.WriteLine(life.Draw());
 
             while (Console.ReadLine() == "y")
             {
-                universe.Evolve();
+                life = life.Evolve();
 
-                Console.WriteLine(universe.ToString());
+                Console.WriteLine(life.Draw());
             }
         }
     }
