@@ -5,27 +5,25 @@ using System.Text;
 
 namespace GameOfLife
 {
-    /// <summary>
-    /// Brute Force Implementation of the 'Game Of Life'
-    /// </summary>
     public class Universe
     {
-        private readonly List<IList<int>> grid;
+        private readonly int[][] grid;
 
         public Universe(int width, int height)
         {
-            grid = new List<IList<int>>();
+            //Initialize grid to all dead cells
+            grid = new int[height][];
 
             for (var i = 0; i < height; i++)
             {
-                var row = new List<int>();
+                var row = new int[width];
 
                 for (var j = 0; j < width; j++)
                 {
-                    row.Add(0);
+                    row[j] = 0;
                 }
 
-                grid.Add(row);
+                grid[i] = row;
             }
         }
 
@@ -33,14 +31,15 @@ namespace GameOfLife
         /// Initialize the universe with living cells
         /// </summary>
         /// <param name="initallyLivingCells"></param>
-        public void LetThereBeLife(IEnumerable<Tuple<int, int>> initallyLivingCells)
+        public void LetThereBeLife(int[,] initallyLivingCells)
         {
             ScortchTheUniverse();
 
             //Let there be life!
-            foreach (var cell in initallyLivingCells)
+            var length = initallyLivingCells.GetLength(0);
+            for (var i = 0; i < length; i++)
             {
-                grid[cell.Item1][cell.Item2] = 1;
+                grid[initallyLivingCells[i, 0]][initallyLivingCells[i, 1]] = 1;
             }
         }
 
@@ -51,7 +50,7 @@ namespace GameOfLife
         {
             foreach (var row in grid)
             {
-                for (var i = 0; i < row.Count; i++)
+                for (var i = 0; i < row.Length; i++)
                 {
                     row[i] = 0;
                 }
@@ -66,9 +65,9 @@ namespace GameOfLife
         {
             //Inspect each cell for its fate
             var changes = new List<Tuple<int, int, int>>();
-            for (var y = 0; y < grid.Count; y++)
+            for (var y = 0; y < grid.Length; y++)
             {
-                for (var x = 0; x < grid[y].Count; x++)
+                for (var x = 0; x < grid[y].Length; x++)
                 {
                     var fate = DetermineFateOfCell(x, y);
                     if (grid[y][x] != fate)
@@ -82,26 +81,6 @@ namespace GameOfLife
             foreach (var change in changes)
             {
                 grid[change.Item1][change.Item2] = change.Item3;
-            }
-        }
-
-        /// <summary>
-        /// Evaluate if a cell is going to live or die based on the
-        /// state of its current state and the state of its neighbors
-        /// </summary>
-        private int DetermineFateOfCell(int x, int y)
-        {
-            var cell = new Cell(x, y, grid);
-
-            int livingNeighbors = cell.GetNumberOfNeighbors();
-
-            if (cell.IsAlive)
-            {
-                return (livingNeighbors < 2 || livingNeighbors > 3) ? 0 : 1;
-            }
-            else
-            {
-                return livingNeighbors == 3 ? 1 : 0;
             }
         }
 
@@ -121,58 +100,59 @@ namespace GameOfLife
             return universe;
         }
 
-        #region Nested Type: Cell
-
-        public class Cell
+        /// <summary>
+        /// Evaluate if a cell is going to live or die based on the
+        /// state of its current state and the state of its neighbors
+        /// </summary>
+        private int DetermineFateOfCell(int x, int y)
         {
-            private readonly List<IList<int>> grid;
-            private readonly int x;
-            private readonly int y;
+            int livingNeighbors = GetNumberOfNeighbors(x, y);
 
-            public Cell(int x, int y, List<IList<int>> grid)
+            if (IsCellAlive(x, y) == 1)
             {
-                this.x = x;
-                this.y = y;
-                this.grid = grid;
+                return (livingNeighbors < 2 || livingNeighbors > 3) ? 0 : 1;
             }
-
-            public bool IsAlive
+            else
             {
-                get
-                {
-                    return grid[y][x] == 1;
-                }
-            }
-
-            public int GetNumberOfNeighbors()
-            {
-                int count = 0;
-
-                count += IsCellAlive(x - 1, y - 1, grid);
-                count += IsCellAlive(x, y - 1, grid);
-                count += IsCellAlive(x + 1, y - 1, grid);
-                count += IsCellAlive(x + 1, y, grid);
-                count += IsCellAlive(x + 1, y + 1, grid);
-                count += IsCellAlive(x, y + 1, grid);
-                count += IsCellAlive(x - 1, y + 1, grid);
-                count += IsCellAlive(x - 1, y, grid);
-
-                return count;
-            }
-
-            private int IsCellAlive(int x, int y, List<IList<int>> grid)
-            {
-                if (x < 0 || y < 0 || x >= grid[0].Count || y >= grid.Count)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return grid[y][x];
-                }
+                return livingNeighbors == 3 ? 1 : 0;
             }
         }
 
-        #endregion
+        /// <summary>
+        /// Count the number of living neighbors
+        /// Inspecting them in a clockwise fashion
+        /// </summary>
+        private int GetNumberOfNeighbors(int x, int y)
+        {
+            int count = 0;
+
+            count += IsCellAlive(x - 1, y - 1);
+            count += IsCellAlive(x, y - 1);
+            count += IsCellAlive(x + 1, y - 1);
+            count += IsCellAlive(x + 1, y);
+            count += IsCellAlive(x + 1, y + 1);
+            count += IsCellAlive(x, y + 1);
+            count += IsCellAlive(x - 1, y + 1);
+            count += IsCellAlive(x - 1, y);
+
+            return count;
+        }
+
+        /// <summary>
+        /// Determine is a cell is alive or dead
+        /// </summary>
+        private int IsCellAlive(int x, int y)
+        {
+            // First check to see if it is a valid coordinate
+            // if not, it is effectively dead
+            if (x < 0 || y < 0 || x >= grid[0].Length || y >= grid.Length)
+            {
+                return 0;
+            }
+            else
+            {
+                return grid[y][x];
+            }
+        }
     }
 }
